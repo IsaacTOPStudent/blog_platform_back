@@ -1,8 +1,12 @@
 #python /django
 venv/
 __pycache__
+*.pyd
+*.pyo
+*.py[cod]
 *.pyc 
 *.log
+*.pot
 db.sqlite3
 
 #environment
@@ -16,3 +20,8 @@ db.sqlite3
 staticfiles/
 media/
 
+#pytest cache
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info
