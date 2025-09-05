@@ -10,9 +10,12 @@ class Like(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'post') #a user can only give one like per post.
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'post'], name= 'unique_user_post_like')
+        ] #a user can only give one like per post.
+        ordering = ['-created_at'] #most recently first
 
 
     def __str__(self):
-        return f"{self.user} likes {self.post.title}"
+        return f"{self.user.email} likes {self.post.title[:30]}"
     
