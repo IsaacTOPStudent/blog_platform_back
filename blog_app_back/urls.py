@@ -25,7 +25,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/', include('posts.urls')),
     path('api/comments/', include('comments.urls')),
-    path('api/likes/', include('likes.urls')),
+    path('api/', include('likes.urls')),
 
     #documentation
     path('api/', include('docs.urls')),
