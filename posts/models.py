@@ -18,6 +18,7 @@ class Post(models.Model):
     excerpt = models.TextField(max_length=200, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add= True)
     update_at = models.DateTimeField(auto_now= True)
+    likes_count = models.PositiveIntegerField(default=0)
 
     read_permission = models.CharField(max_length=20, choices=PERMISSION_CHOICES, default='public')
     edit_permission = models.CharField(max_length=20, choices=PERMISSION_CHOICES, default='author')
