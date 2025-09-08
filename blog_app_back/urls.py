@@ -24,7 +24,7 @@ urlpatterns = [
     #app routes
     path('api/users/', include('users.urls')),
     path('api/', include('posts.urls')),
-    path('api/comments/', include('comments.urls')),
+    path('api/', include('comments.urls')),
     path('api/', include('likes.urls')),
 
     #documentation
