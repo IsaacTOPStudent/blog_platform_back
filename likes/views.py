@@ -52,7 +52,7 @@ class LikeListView(generics.ListAPIView):
 
         queryset = Like.objects.filter(post=post)
 
-        user_id = self.request.query_params.get('user')
+        user_id = self.request.query_params.get('user_id')
         if user_id:
             queryset = queryset.filter(user__id=user_id)
 
