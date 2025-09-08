@@ -77,3 +77,15 @@ class PostDetailView(generics.RetrieveAPIView):
         
         return post
 
+class PostDeleteView(generics.DestroyAPIView):
+    serializer_class = PostSerializer
+    queryset = Post.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+
+        if not user_can_edit_post(user, instance):
+            raise PermissionDenied("You don't have permission to delete this post")
+        
+        instance.delete()
