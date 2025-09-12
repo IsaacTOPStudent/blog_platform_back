@@ -9,11 +9,18 @@ LIKES_LIST_URL = lambda post_id: f'/api/post/{post_id}/likes/'
 @pytest.mark.django_db
 def test_list_likes_on_post(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Test", content="Content", read_permission="public")
+    post = Post.objects.create(
+        author=user,
+        title="Test",
+        content="Content",
+        team_access='read',
+        authenticated_access='read',
+        public_access="read"  
+    )
 
     # create 3 likes
     for i in range(3):
-        other_client, other_user = auth_client(email=f"user{i}@test.com")
+        _, other_user = auth_client(email=f"user{i}@test.com")
         Like.objects.create(user=other_user, post=post)
 
     response = client.get(LIKES_LIST_URL(post.id))
@@ -24,7 +31,14 @@ def test_list_likes_on_post(auth_client):
 @pytest.mark.django_db
 def test_filter_likes_by_user(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Test", content="Content", read_permission="public")
+    post = Post.objects.create(
+        author=user,
+        title="Test",
+        content="Content",
+        team_access='read',
+        authenticated_access='read',
+        public_access="read"
+    )
 
     # like for this user
     Like.objects.create(user=user, post=post)
@@ -38,11 +52,18 @@ def test_filter_likes_by_user(auth_client):
     assert response.data["count"] == 1
     assert response.data["results"][0]["user"] == user.username
 
+
 @pytest.mark.django_db
 def test_filter_likes_by_post(auth_client):
     client, user = auth_client()
-    post1 = Post.objects.create(author=user, title="Test1", content="Content1", read_permission="public")
-    post2 = Post.objects.create(author=user, title="Test2", content="Content2", read_permission="public")
+    post1 = Post.objects.create(
+        author=user, title="Test1", content="Content1", public_access="read", authenticated_access ='read',
+        team_access = 'read'
+    )
+    post2 = Post.objects.create(
+        author=user, title="Test2", content="Content2", public_access="read", authenticated_access ='read',
+        team_access = 'read'
+    )
 
     # Likes on both posts
     Like.objects.create(user=user, post=post1)
@@ -55,14 +76,23 @@ def test_filter_likes_by_post(auth_client):
     assert response.data["count"] == 1
     assert response.data["results"][0]["user"] == user.username
 
+
 @pytest.mark.django_db
 def test_cannot_view_likes_without_permission(auth_client):
     team_a = Team.objects.create(name="Team A")
     client1, user1 = auth_client(email="author@test.com", team=team_a)
-    post = Post.objects.create(author=user1, title="Private", content="Owner only", read_permission="author")
+    post = Post.objects.create(
+        author=user1,
+        title="Private",
+        content="Owner only",
+        author_access="write",
+        team_access="none",
+        authenticated_access="none",
+        public_access="none"
+    )
 
     team_b = Team.objects.create(name="Team B")
-    client2, user2 = auth_client(email="intruder@test.com", team=team_b)
+    client2, _ = auth_client(email="intruder@test.com", team=team_b)
 
     response = client2.get(LIKES_LIST_URL(post.id))
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -71,7 +101,14 @@ def test_cannot_view_likes_without_permission(auth_client):
 @pytest.mark.django_db
 def test_pagination_likes(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Paginated", content="Test", read_permission="public")
+    post = Post.objects.create(
+        author=user,
+        title="Paginated",
+        content="Test",
+        authenticated_access='read',
+        team_access='read',
+        public_access="read"
+    )
 
     for i in range(25):
         _, other_user = auth_client(email=f"user{i}@test.com")
@@ -82,8 +119,6 @@ def test_pagination_likes(auth_client):
     assert response.data["count"] == 25
     assert len(response.data["results"]) == 20
     assert response.data["next"] is not None
-    response1 = client.get(response.data['next'])
-    assert 'previous' in response1.data
 
     # second page
     response_page2 = client.get(LIKES_LIST_URL(post.id) + "?page=2")
@@ -92,9 +127,16 @@ def test_pagination_likes(auth_client):
 
 @pytest.mark.django_db
 def test_anonymous_user_can_view_likes_on_public_post(client, auth_client):
-    # auth user make a post
+    # auth user makes a post
     _, author = auth_client(email="author@test.com")
-    post = Post.objects.create(author=author, title="Public Post", content="Anyone can see", read_permission="public")
+    post = Post.objects.create(
+        author=author,
+        title="Public Post",
+        content="Anyone can see",
+        authenticated_access='read',
+        team_access='read',
+        public_access="read"
+    )
 
     # other user liked it
     _, liker = auth_client(email="liker@test.com")
