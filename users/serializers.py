@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from django.contrib.auth import authenticate
+from rest_framework import serializers
+from rest_framework.authtoken.models import Token
 from .models import User, Team
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -37,3 +40,23 @@ class RegisterSerializer(serializers.ModelSerializer):
             team=default_team
         )
         return user
+    
+class EmailAuthTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            user = authenticate(request=self.context.get('request'), username=email, password=password)
+
+            if not user:
+                raise serializers.ValidationError('Invalid credentials')
+            
+        else:
+            raise serializers.ValidationError("Must include 'email' and 'password'")
+        
+        attrs['user'] = user 
+        return attrs
