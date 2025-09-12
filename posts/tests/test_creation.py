@@ -7,39 +7,59 @@ POST_LIST_URL = '/api/post/'
 @pytest.mark.django_db
 def test_create_post_sets_author(auth_client):
     client, user = auth_client()
-    payload = {'title': 'Isaac Post', 
-               'content': 'Some interesting content',
-               'read_permission': 'public',
-               'edit_permission': 'author'}
+    payload = {
+        'title': 'Isaac Post', 
+        'content': 'Some interesting content',
+        'author_access': 'write',           
+        'team_access': 'read',
+        'authenticated_access': 'read',
+        'public_access': 'none'
+    }
     response = client.post(POST_LIST_URL, payload, format='json')
 
     assert response.status_code == status.HTTP_201_CREATED
     post = Post.objects.get(id=response.data['id'])
-    assert post.author == user 
+    assert post.author == user
     assert post.excerpt == post.content[:200]
+
 
 @pytest.mark.django_db
 def test_create_post_missing_required_fields(auth_client):
     client, _ = auth_client()
 
     # Without title
-    response = client.post(POST_LIST_URL, {"content": "Contenido sin título"}, format="json")
+    response = client.post(POST_LIST_URL, {
+        "content": "Contenido sin título",
+        "author_access": "write",
+        "team_access": "none",
+        "authenticated_access": "none",
+        "public_access": "none"
+    }, format="json")
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     # Without content
-    response = client.post(POST_LIST_URL, {"title": "Título sin contenido"}, format="json")
+    response = client.post(POST_LIST_URL, {
+        "title": "Título sin contenido",
+        "author_access": "write",
+        "team_access": "none",
+        "authenticated_access": "none",
+        "public_access": "none"
+    }, format="json")
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
 @pytest.mark.django_db
 def test_post_excerpt_is_generated_and_limited(auth_client):
     client, user = auth_client()
 
-    long_content = "x" * 500  # 500 
+    long_content = "x" * 500  # 500 chars
     payload = {
         "title": "Post con excerpt",
         "content": long_content,
-        "read_permission": "public",
-        "edit_permission": "author",
+        "author_access": "write",
+        "team_access": "read",
+        "authenticated_access": "read",
+        "public_access": "read",
     }
 
     response = client.post(POST_LIST_URL, payload, format="json")

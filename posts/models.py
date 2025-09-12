@@ -1,16 +1,23 @@
 from django.db import models
-
 from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
 class Post(models.Model):
-    PERMISSION_CHOICES = (
-        ('public', 'Public'),
-        ('authenticated', 'Authenticated'),
-        ('team', 'Team'),
-        ('author', 'Author'),
-    )
+    AUTHOR_CHOICES = [
+        ('write', 'Read & Write'),
+    ]
+
+    TEAM_AUTH_CHOICES = [
+        ('none', 'None'),
+        ('read', 'Read Only'),
+        ('write', 'Read & Write'),
+    ]
+
+    PUBLIC_CHOICES = [
+        ('none', 'None'),
+        ('read', 'Read Only'),
+    ]
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     title = models.CharField(max_length=200)
@@ -20,8 +27,25 @@ class Post(models.Model):
     update_at = models.DateTimeField(auto_now= True)
     likes_count = models.PositiveIntegerField(default=0)
 
-    read_permission = models.CharField(max_length=20, choices=PERMISSION_CHOICES, default='public')
-    edit_permission = models.CharField(max_length=20, choices=PERMISSION_CHOICES, default='author')
+    public_access = models.CharField(
+        max_length=10, choices= PUBLIC_CHOICES,
+        default='none'
+    )
+
+    authenticated_access = models.CharField(
+        max_length=10, choices=TEAM_AUTH_CHOICES,
+        default='none'
+    )
+
+    team_access = models.CharField(
+        max_length=10, choices=TEAM_AUTH_CHOICES,
+        default='none'
+    )
+
+    author_access = models.CharField(
+        max_length=10, choices=AUTHOR_CHOICES,
+        default='write'
+    )
 
     def save(self, *args, **kwargs):
         if not self.excerpt:
@@ -30,3 +54,6 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.author})"
+    
+    class Meta:
+        ordering = ['-created_at']

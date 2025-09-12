@@ -10,22 +10,40 @@ POST_DELETE_URL = lambda post_id: f"/api/post/{post_id}/delete/"
 @pytest.mark.django_db
 def test_author_can_delete_own_post(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Test Post", content="...", edit_permission="author")
+    post = Post.objects.create(
+        author=user,
+        title="Test Post",
+        content="...",
+        author_access="write",   # Author always can read and write
+        team_access="none",
+        authenticated_access="none",
+        public_access="none",
+    )
 
     response = client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert not Post.objects.filter(id=post.id).exists()
 
+
 @pytest.mark.django_db
 def test_user_without_permission_cannot_delete_post(auth_client):
     client1, user1 = auth_client()
-    client2, user2 = auth_client(email="other@example.com")
+    client2, _ = auth_client(email="other@example.com")
 
-    post = Post.objects.create(author=user1, title="Another Post", content="...", edit_permission="author")
+    post = Post.objects.create(
+        author=user1,
+        title="Another Post",
+        content="...",
+        author_access="write",
+        team_access="read",
+        authenticated_access="read",
+        public_access="read",  
+    )
 
     response = client2.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert Post.objects.filter(id=post.id).exists()
+
 
 @pytest.mark.django_db
 def test_admin_can_delete_any_post(auth_client):
@@ -33,17 +51,34 @@ def test_admin_can_delete_any_post(auth_client):
     admin_user.role = "admin"
     admin_user.save()
 
-    post_author_client, post_author = auth_client(email="author@example.com")
-    post = Post.objects.create(author=post_author, title="Admin Deletes This", content="...", edit_permission="author")
+    _, author = auth_client(email="author@example.com")
+    post = Post.objects.create(
+        author=author,
+        title="Admin Deletes This",
+        content="...",
+        author_access="write",
+        team_access="read",
+        authenticated_access="read",
+        public_access="none",
+    )
 
     response = client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert not Post.objects.filter(id=post.id).exists()
 
+
 @pytest.mark.django_db
 def test_delete_post_removes_associated_likes_and_comments(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="With Relations", content="...")
+    post = Post.objects.create(
+        author=user,
+        title="With Relations",
+        content="...",
+        author_access="write",
+        team_access="none",
+        authenticated_access="none",
+        public_access="none",
+    )
 
     Like.objects.create(user=user, post=post)
     Comment.objects.create(user=user, post=post, content="Comment to be deleted")
@@ -54,38 +89,55 @@ def test_delete_post_removes_associated_likes_and_comments(auth_client):
     assert not Like.objects.filter(post=post).exists()
     assert not Comment.objects.filter(post=post).exists()
 
+
 @pytest.mark.django_db
 def test_anonymous_cannot_delete_post(client, auth_client):
     _, user = auth_client()
-    post = Post.objects.create(author=user, title="Anonymous Cannot Delete", content="...")
+    post = Post.objects.create(
+        author=user,
+        title="Anonymous Cannot Delete",
+        content="...",
+        author_access="write",
+        team_access="read",
+        authenticated_access="read",
+        public_access="read",
+    )
 
     response = client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert Post.objects.filter(id=post.id).exists()
 
+
 @pytest.mark.django_db
-def test_delete_post_with_team_permission(auth_client, create_user):
+def test_delete_post_with_team_permission(auth_client):
     team = Team.objects.create(name="Team A")
     client_author, author = auth_client(team=team)
+
     post = Post.objects.create(
         author=author,
         title="Team Post",
         content="...",
-        edit_permission="team"
+        author_access="write",
+        team_access="write",              
+        authenticated_access="read",
+        public_access="none",
     )
 
-    # Same user team can delete
-    client_same_team, same_team_user = auth_client(email="same@test.com", team=team)
+    # same team user can delete
+    client_same_team, _ = auth_client(email="same@test.com", team=team)
     response = client_same_team.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    # different team can't delete
-    client_other_team, other_user = auth_client(email="other@test.com", team=Team.objects.create(name="Team B"))
+    # different team user cannot delete
+    client_other_team, _ = auth_client(email="other@test.com", team=Team.objects.create(name="Team B"))
     post2 = Post.objects.create(
         author=author,
         title="Team Post 2",
         content="...",
-        edit_permission="team"
+        author_access="write",
+        team_access="write",
+        authenticated_access="read",
+        public_access="none",
     )
     response = client_other_team.delete(POST_DELETE_URL(post2.id))
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -98,64 +150,63 @@ def test_delete_post_with_authenticated_permission(auth_client):
         author=author,
         title="Auth Post",
         content="...",
-        edit_permission="authenticated"
+        author_access="write",
+        team_access="write",
+        authenticated_access="write",    # Any authenticated user can delete
+        public_access="read",
     )
 
-    # authenticated users can delete
-    client_other, other_user = auth_client(email="other@test.com")
+    client_other, _ = auth_client(email="other@test.com")
     response = client_other.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
-
-
-@pytest.mark.django_db
-def test_delete_post_with_public_permission(auth_client):
-    client_author, author = auth_client()
-    post = Post.objects.create(
-        author=author,
-        title="Public Post",
-        content="...",
-        edit_permission="public"
-    )
-
-    # anonymous user can delete it 
-    client_other, other_user = auth_client(email="other@test.com")
-    response = client_other.delete(POST_DELETE_URL(post.id))
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
 
 @pytest.mark.django_db
 def test_delete_already_deleted_post(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Delete Twice", content="...")
+    post = Post.objects.create(
+        author=user,
+        title="Delete Twice",
+        content="...",
+        author_access="write",
+        team_access="none",
+        authenticated_access="none",
+        public_access="none",
+    )
 
-    # First delete
+    # First delete → OK
     response = client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    # second delete, should raise 404
+    # Second delete → 404
     response = client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.django_db
-def test_superuser_can_delete_any_post(auth_client, create_user):
+def test_superuser_can_delete_any_post(auth_client):
     client, user = auth_client()
-    post = Post.objects.create(author=user, title="Superuser Post", content="...")
+    post = Post.objects.create(
+        author=user,
+        title="Superuser Post",
+        content="...",
+        author_access="write",
+        team_access="read",
+        authenticated_access="read",
+        public_access="read",
+    )
 
-# Admin CAN see it
+    # Create superuser
     admin_client, admin = auth_client(email="admin2@example.com", password="adminpass123")
-    #admin user role
-    #admin.role = 'admin'
-    #site admin
     admin.is_staff = True
-    admin.is_superuser = True 
+    admin.is_superuser = True
     admin.save()
+
     response = admin_client.delete(POST_DELETE_URL(post.id))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 @pytest.mark.django_db
 def test_delete_nonexistent_post(auth_client):
-    client, user = auth_client()
-    response = client.delete(POST_DELETE_URL(100))  # nonexistent id
+    client, _ = auth_client()
+    response = client.delete(POST_DELETE_URL(100))  # id inexistente
     assert response.status_code == status.HTTP_404_NOT_FOUND
