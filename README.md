@@ -29,7 +29,7 @@ pip install -r requirements-dev.txt
 ```
 
 ### 4. Environment Variables
-1. Copy the example file:
+1. Copy the example file from this repository:
    ```bash
    cp example.env .env
    ```
