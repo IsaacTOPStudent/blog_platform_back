@@ -63,6 +63,9 @@ pytest
 
 ## Main Endpoints
 
+### Admin
+- **GET** `/admin/` 
+
 ### Authentication
 - **POST** `/api/users/register/` → User registration
 - **POST** `/api/users/login/` → Login (get Token)
