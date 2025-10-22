@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: blog-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn blog_app_back.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "your-render-service-name.onrender.com"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_NAME
+        value: blog_app
+      - key: DB_USER
+        value: postgres
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: blog-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: blog-db
+          property: port
+
+databases:
+  - name: blog-db
+    databaseName: blog_app
