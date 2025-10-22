@@ -9,5 +9,5 @@ drf-spectacular==0.28.0
 drf-spectacular-sidecar==2025.8.1
 psycopg2-binary==2.9.10
 inflection==0.5.1
-gunicorn==22.1.0
+gunicorn==21.2.0
 whitenoise==6.11.0
