@@ -1,9 +1,12 @@
 from rest_framework import serializers
 from .models import Post
+from users.serializers import UserSerializer
 from .permissions import validate_permission_hierarchy_values
 
 class PostSerializer(serializers.ModelSerializer):
-    author = serializers.ReadOnlyField(source='author.username') #only read
+    # author = serializers.ReadOnlyField(source='author.username') #only read
+
+    author = UserSerializer(read_only=True)
 
     class Meta:
         model = Post
