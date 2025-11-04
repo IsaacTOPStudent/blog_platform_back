@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Like
 
 class LikeSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.email')
 
     class Meta:
         model = Like
