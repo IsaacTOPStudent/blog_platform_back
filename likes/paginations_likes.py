@@ -4,7 +4,7 @@ from rest_framework.response import Response
 import math
 
 class LikePagination(PageNumberPagination):
-    page_size = 20
+    page_size = 15
 
     def get_paginated_response(self, data):
         return Response({
