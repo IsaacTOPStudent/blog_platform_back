@@ -28,11 +28,12 @@ class PostSerializer(serializers.ModelSerializer):
         return attrs
 
 class PostDetailSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField()
+    
+    author = UserSerializer(read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'excerpt', 'created_at', 'update_at', 'author', 'author_access', 'team_access', 'authenticated_access', 'public_access']
+        fields = ['id','author', 'title', 'content', 'excerpt', 'created_at', 'update_at', 'author_access', 'team_access', 'authenticated_access', 'public_access']
 
 class PostUpdateSerializer(serializers.ModelSerializer):
     class Meta:
