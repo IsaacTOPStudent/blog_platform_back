@@ -3,7 +3,7 @@ from rest_framework.response import Response
 import math
 
 class CommentPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 5
 
     def get_paginated_response(self, data):
         return Response({
