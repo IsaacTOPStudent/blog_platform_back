@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Comment, Post
 
 class CommentSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+    user = serializers.ReadOnlyField(source='user.email')
     post = serializers.ReadOnlyField(source='post.title')
     content = serializers.CharField(allow_blank=True)
 
