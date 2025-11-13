@@ -48,8 +48,8 @@ class Post(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        if not self.excerpt:
-            self.excerpt = self.content[:200]
+        # Always regenerate excerpt from current content
+        self.excerpt = self.content[:200] if self.content else ""
         super().save(*args, **kwargs)
 
     def __str__(self):

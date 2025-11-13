@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions
+from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema, OpenApiResponse
@@ -81,7 +82,7 @@ class PostUpdateView(generics.UpdateAPIView):
         request=PostUpdateSerializer,
         responses={
             200: OpenApiResponse(
-                response=PostUpdateSerializer,
+                response=PostSerializer,
                 description="Post updated successfully"
             ),
             400: OpenApiResponse(description="Invalid data"),
@@ -91,7 +92,7 @@ class PostUpdateView(generics.UpdateAPIView):
         tags=['Posts']
     )
     def put(self, request, *args, **kwargs):
-        return super().put(request, *args, **kwargs)
+        return self.update(request, *args, **kwargs)
     
     @extend_schema(
         operation_id='partial_update_post',
@@ -99,7 +100,7 @@ class PostUpdateView(generics.UpdateAPIView):
         request=PostUpdateSerializer,
         responses={
             200: OpenApiResponse(
-                response=PostUpdateSerializer,
+                response=PostSerializer,
                 description="Post updated successfully"
             ),
             400: OpenApiResponse(description="Invalid data"),
@@ -109,7 +110,8 @@ class PostUpdateView(generics.UpdateAPIView):
         tags=['Posts']
     )
     def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
     def get_object(self):
         post = super().get_object()
@@ -119,6 +121,20 @@ class PostUpdateView(generics.UpdateAPIView):
             raise PermissionDenied('You do not have permission to edit this post')
         
         return post
+
+    def update(self, request, *args, **kwargs):
+        """Use PostUpdateSerializer for input validation and return PostSerializer as response."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        # Validate and save with the write serializer
+        write_serializer = PostUpdateSerializer(instance, data=request.data, partial=partial, context=self.get_serializer_context())
+        write_serializer.is_valid(raise_exception=True)
+        self.perform_update(write_serializer)
+
+        # Prepare the response with the read serializer shape
+        read_serializer = PostSerializer(write_serializer.instance, context=self.get_serializer_context())
+        return Response(read_serializer.data)
     
 class PostDetailView(generics.RetrieveAPIView):
 

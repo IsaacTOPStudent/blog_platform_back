@@ -38,7 +38,8 @@ class PostDetailSerializer(serializers.ModelSerializer):
 class PostUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ['id', 'author', 'title', 'content', 'excerpt', 'created_at', 'update_at', 'author_access', 'team_access', 'authenticated_access', 'public_access']
+        # Input payload for updates should only include mutable fields
+        fields = ['title', 'content', 'author_access', 'team_access', 'authenticated_access', 'public_access']
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)
