@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils.html import strip_tags
 
 User = settings.AUTH_USER_MODEL
 
@@ -48,8 +49,15 @@ class Post(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        # Always regenerate excerpt from current content
-        self.excerpt = self.content[:200] if self.content else ""
+        # Always regenerate excerpt from current content (strip HTML safely without external deps)
+        text = strip_tags(self.content or '')
+        text = ' '.join(text.split())  # normalize whitespace
+        if len(text) > 200:
+            cut = text[:200]
+            cut = cut.rsplit(' ', 1)[0] if ' ' in cut else cut
+            self.excerpt = f"{cut}..."
+        else:
+            self.excerpt = text
         super().save(*args, **kwargs)
 
     def __str__(self):
