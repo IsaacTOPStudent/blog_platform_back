@@ -98,7 +98,7 @@ class CommentListView(generics.ListAPIView):
             if not user_id.isdigit():
                 raise ValidationError({'user_id': 'Must be a valid integer'})
             queryset = queryset.filter(user__id=user_id)
-        return queryset.order_by('-created_at')
+        return queryset.order_by('created_at')
 
 class CommentDeleteView(generics.DestroyAPIView):
     """
